@@ -19,7 +19,9 @@ export function createColonist(name, pixelX, pixelY) {
         task: null,
         carrying: null,  // { type: 'wood'|'stone', amount: number } or null
         workProgress: 0,
-        targetX: null,
+        path: [],        // Array of {x, y} tile positions to follow
+        pathIndex: 0,    // Current position in path
+        targetX: null,   // Current movement target (pixel coords)
         targetY: null,
     };
 }
@@ -59,11 +61,21 @@ export function setTarget(colonist, pixelX, pixelY) {
 }
 
 /**
+ * Sets the colonist's path to follow.
+ */
+export function setPath(colonist, path) {
+    colonist.path = path || [];
+    colonist.pathIndex = 0;
+}
+
+/**
  * Clears colonist's current task and resets work state.
  */
 export function clearTask(colonist) {
     colonist.task = null;
     colonist.workProgress = 0;
+    colonist.path = [];
+    colonist.pathIndex = 0;
     colonist.targetX = null;
     colonist.targetY = null;
 }

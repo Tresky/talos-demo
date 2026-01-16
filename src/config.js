@@ -33,6 +33,10 @@ export const BUILDINGS = {
         cost: { wood: 1 },
         tile: 'FLOOR',
     },
+    door: {
+        cost: { wood: 2 },
+        tile: 'DOOR',
+    },
     stockpile: {
         cost: {},
         tile: 'STOCKPILE',

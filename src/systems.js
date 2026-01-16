@@ -6,10 +6,11 @@
 import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
 import { setTile, addResource } from './state.js';
-import { addStockpile } from './map.js';
-import { clearTask, setCarrying, clearCarrying } from './colonist.js';
+import { addStockpile, tileToPixel } from './map.js';
+import { clearTask, setCarrying, clearCarrying, setTarget } from './colonist.js';
 import { removeTask } from './tasks.js';
 import { detectRooms } from './rooms.js';
+import { getWalkableAdjacent } from './pathfinding.js';
 
 /**
  * Updates all colonists - movement and work.
@@ -18,21 +19,32 @@ export function updateColonists(state) {
     for (const colonist of state.colonists) {
         if (!colonist.task) continue;
         
-        updateColonistMovement(colonist);
+        updateColonistMovement(state, colonist);
         
-        // If at destination, do work
-        if (colonist.targetX !== null && 
-            colonist.x === colonist.targetX && 
-            colonist.y === colonist.targetY) {
+        // If at end of path, do work
+        if (isAtPathEnd(colonist)) {
             updateColonistWork(state, colonist);
         }
     }
 }
 
 /**
- * Moves a colonist towards their target.
+ * Checks if colonist has reached the end of their path.
  */
-function updateColonistMovement(colonist) {
+function isAtPathEnd(colonist) {
+    if (!colonist.path || colonist.path.length === 0) return false;
+    if (colonist.pathIndex < colonist.path.length - 1) return false;
+    
+    // At last waypoint - check if actually there
+    return colonist.targetX !== null && 
+           colonist.x === colonist.targetX && 
+           colonist.y === colonist.targetY;
+}
+
+/**
+ * Moves a colonist along their path.
+ */
+function updateColonistMovement(state, colonist) {
     if (colonist.targetX === null) return;
     
     const dx = colonist.targetX - colonist.x;
@@ -40,13 +52,21 @@ function updateColonistMovement(colonist) {
     const dist = Math.sqrt(dx * dx + dy * dy);
     
     if (dist > CONFIG.colonistSpeed) {
-        // Move towards target
+        // Move towards current target
         colonist.x += (dx / dist) * CONFIG.colonistSpeed;
         colonist.y += (dy / dist) * CONFIG.colonistSpeed;
     } else {
         // Snap to target
         colonist.x = colonist.targetX;
         colonist.y = colonist.targetY;
+        
+        // Move to next waypoint if available
+        if (colonist.path && colonist.pathIndex < colonist.path.length - 1) {
+            colonist.pathIndex++;
+            const nextWaypoint = colonist.path[colonist.pathIndex];
+            const target = tileToPixel(nextWaypoint.x, nextWaypoint.y);
+            setTarget(colonist, target.x, target.y);
+        }
     }
 }
 
@@ -58,15 +78,35 @@ function updateColonistWork(state, colonist) {
     
     switch (task.type) {
         case 'gather':
-            processGatherWork(state, colonist);
+            // Verify colonist is adjacent to gather target
+            if (isAdjacent(colonist, task.x, task.y)) {
+                processGatherWork(state, colonist);
+            }
             break;
         case 'haul':
             processHaulWork(state, colonist);
             break;
         case 'build':
-            processBuildWork(state, colonist);
+            // Verify colonist is adjacent to build target
+            if (isAdjacent(colonist, task.x, task.y)) {
+                processBuildWork(state, colonist);
+            }
             break;
     }
+}
+
+/**
+ * Checks if colonist is adjacent to a tile (within 1 tile).
+ */
+function isAdjacent(colonist, tileX, tileY) {
+    const colTileX = Math.floor(colonist.x / CONFIG.tileSize);
+    const colTileY = Math.floor(colonist.y / CONFIG.tileSize);
+    
+    const dx = Math.abs(colTileX - tileX);
+    const dy = Math.abs(colTileY - tileY);
+    
+    // Adjacent means exactly 1 tile away in cardinal direction
+    return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
 }
 
 /**
@@ -147,8 +187,8 @@ function completeBuild(state, colonist) {
             addStockpile(state, task.x, task.y);
         }
         
-        // Detect rooms when walls are placed
-        if (building.tile === 'WALL') {
+        // Detect rooms when walls or doors are placed
+        if (building.tile === 'WALL' || building.tile === 'DOOR') {
             detectRooms(state);
         }
     }

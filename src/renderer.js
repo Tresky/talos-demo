@@ -70,6 +70,9 @@ function renderTile(ctx, tile, px, py, tileSize) {
         case TILE.RUBBLE:
             renderRubble(ctx, px, py);
             break;
+        case TILE.DOOR:
+            renderDoor(ctx, px, py, tileSize);
+            break;
     }
 }
 
@@ -126,6 +129,18 @@ function renderRubble(ctx, px, py) {
     ctx.fillStyle = '#5a5a6a';
     ctx.fillRect(px + 6, py + 20, 6, 6);
     ctx.fillRect(px + 16, py + 22, 8, 5);
+}
+
+function renderDoor(ctx, px, py, tileSize) {
+    // Door frame
+    ctx.fillStyle = '#5a3a1a';
+    ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+    // Door panel
+    ctx.fillStyle = '#7a5a3a';
+    ctx.fillRect(px + 6, py + 4, tileSize - 12, tileSize - 8);
+    // Handle
+    ctx.fillStyle = '#aa8a5a';
+    ctx.fillRect(px + tileSize - 12, py + 14, 3, 6);
 }
 
 /**

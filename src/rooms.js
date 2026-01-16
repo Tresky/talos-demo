@@ -9,11 +9,12 @@ import { isInBounds } from './map.js';
 let nextRoomId = 0;
 
 /**
- * Checks if a tile blocks room boundaries (is a wall).
+ * Checks if a tile blocks room boundaries (is a wall or door).
  */
 function isWall(state, x, y) {
     if (!isInBounds(x, y)) return false;
-    return state.tiles[y][x] === TILE.WALL;
+    const tile = state.tiles[y][x];
+    return tile === TILE.WALL || tile === TILE.DOOR;
 }
 
 /**

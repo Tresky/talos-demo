@@ -23,6 +23,7 @@ export function initUI() {
         buildButtons: {
             wall: document.getElementById('btn-wall'),
             floor: document.getElementById('btn-floor'),
+            door: document.getElementById('btn-door'),
             stockpile: document.getElementById('btn-stockpile'),
         },
     };

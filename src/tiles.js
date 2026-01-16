@@ -11,6 +11,7 @@ export const TILE = {
     STOCKPILE: 5,
     STUMP: 6,
     RUBBLE: 7,
+    DOOR: 8,
 };
 
 // Tile metadata - extensible for future tile types
@@ -69,6 +70,13 @@ export const TILE_DATA = {
         color: '#6a6a7a',
         walkable: true,
         buildable: true,
+    },
+    [TILE.DOOR]: {
+        name: 'Door',
+        color: '#6a4a2a',
+        walkable: true,
+        buildable: false,
+        isDoor: true,
     },
 };
 
