@@ -490,9 +490,10 @@ function canBuildAt(x, y) {
 }
 
 canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / CONFIG.tileSize);
-    const y = Math.floor((e.clientY - rect.top) / CONFIG.tileSize);
+    const scaleX = canvas.width / canvas.offsetWidth;
+    const scaleY = canvas.height / canvas.offsetHeight;
+    const x = Math.floor((e.offsetX * scaleX) / CONFIG.tileSize);
+    const y = Math.floor((e.offsetY * scaleY) / CONFIG.tileSize);
     state.hoverTile = { x, y };
 });
 
@@ -501,9 +502,15 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 canvas.addEventListener('click', (e) => {
+    // offsetX/offsetY are relative to the element's padding edge (inside border)
+    // Scale in case CSS size differs from canvas internal size
     const rect = canvas.getBoundingClientRect();
-    const tileX = Math.floor((e.clientX - rect.left) / CONFIG.tileSize);
-    const tileY = Math.floor((e.clientY - rect.top) / CONFIG.tileSize);
+    const scaleX = canvas.width / canvas.offsetWidth;
+    const scaleY = canvas.height / canvas.offsetHeight;
+    const x = e.offsetX * scaleX;
+    const y = e.offsetY * scaleY;
+    const tileX = Math.floor(x / CONFIG.tileSize);
+    const tileY = Math.floor(y / CONFIG.tileSize);
     
     if (state.buildMode) {
         // Try to build
