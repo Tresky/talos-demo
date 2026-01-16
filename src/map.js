@@ -48,9 +48,7 @@ export function generateMap(state) {
         }
     }
     
-    // Place initial stockpile at center
-    state.tiles[cy][cx] = TILE.STOCKPILE;
-    state.stockpiles.push({ x: cx, y: cy });
+    // No starting stockpile - player builds their own
 }
 
 /**

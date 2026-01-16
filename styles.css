@@ -147,6 +147,50 @@ h2 {
 }
 
 /* ============================================
+   Room Info Panel
+   ============================================ */
+
+#room-info {
+    background: #1a1a2e;
+    border-radius: 4px;
+    padding: 0;
+}
+
+#room-info h2 {
+    margin-bottom: 10px;
+}
+
+.room-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.room-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #16213e;
+    border-radius: 4px;
+}
+
+.room-stat .label {
+    color: #888;
+}
+
+.room-stat .value {
+    color: #bbe1fa;
+    font-weight: bold;
+}
+
+.room-hint {
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #666;
+    font-style: italic;
+}
+
+/* ============================================
    Instructions & Status
    ============================================ */
 

@@ -4,6 +4,7 @@
 
 import { CONFIG } from './config.js';
 import { createGatherTask, createBuildTask, addTask } from './tasks.js';
+import { getRoomAtTile } from './rooms.js';
 
 /**
  * Sets up all input event listeners.
@@ -66,9 +67,25 @@ function handleClick(state, tileX, tileY) {
         const task = createBuildTask(state, tileX, tileY, state.buildMode);
         addTask(state, task);
     } else {
-        // Normal mode - try to queue gather
+        // Normal mode - try to queue gather first
         const task = createGatherTask(state, tileX, tileY);
-        addTask(state, task);
+        if (task) {
+            addTask(state, task);
+        } else {
+            // No gather task - check for room selection
+            const room = getRoomAtTile(state, tileX, tileY);
+            if (room) {
+                // Toggle room selection
+                if (state.ui.selectedRoom?.id === room.id) {
+                    state.ui.selectedRoom = null;
+                } else {
+                    state.ui.selectedRoom = room;
+                }
+            } else {
+                // Clicked outside any room - deselect
+                state.ui.selectedRoom = null;
+            }
+        }
     }
 }
 

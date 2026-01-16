@@ -9,6 +9,7 @@ import { setTile, addResource } from './state.js';
 import { addStockpile } from './map.js';
 import { clearTask, setCarrying, clearCarrying } from './colonist.js';
 import { removeTask } from './tasks.js';
+import { detectRooms } from './rooms.js';
 
 /**
  * Updates all colonists - movement and work.
@@ -144,6 +145,11 @@ function completeBuild(state, colonist) {
         // Special handling for stockpiles
         if (building.tile === 'STOCKPILE') {
             addStockpile(state, task.x, task.y);
+        }
+        
+        // Detect rooms when walls are placed
+        if (building.tile === 'WALL') {
+            detectRooms(state);
         }
     }
     

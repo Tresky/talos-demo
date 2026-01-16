@@ -5,6 +5,7 @@
 import { BUILDINGS } from './config.js';
 import { canAfford } from './state.js';
 import { getStatusText } from './colonist.js';
+import { getRoomInfo } from './rooms.js';
 
 // Cache DOM elements
 let elements = null;
@@ -18,6 +19,7 @@ export function initUI() {
         stoneCount: document.getElementById('stone-count'),
         colonistList: document.getElementById('colonist-list'),
         status: document.getElementById('status'),
+        roomInfo: document.getElementById('room-info'),
         buildButtons: {
             wall: document.getElementById('btn-wall'),
             floor: document.getElementById('btn-floor'),
@@ -35,6 +37,7 @@ export function updateUI(state) {
     updateResourceDisplay(state);
     updateBuildButtons(state);
     updateColonistList(state);
+    updateRoomInfo(state);
     updateStatusBar(state);
 }
 
@@ -69,6 +72,45 @@ function updateColonistList(state) {
             <span class="colonist-status">${getStatusText(colonist)}</span>
         </div>
     `).join('');
+}
+
+/**
+ * Updates room info panel.
+ */
+function updateRoomInfo(state) {
+    if (!elements.roomInfo) return;
+    
+    const room = state.ui.selectedRoom;
+    const info = getRoomInfo(room);
+    
+    if (info) {
+        elements.roomInfo.innerHTML = `
+            <h2>🏠 Room Selected</h2>
+            <div class="room-stats">
+                <div class="room-stat">
+                    <span class="label">Name</span>
+                    <span class="value">${info.name}</span>
+                </div>
+                <div class="room-stat">
+                    <span class="label">Size</span>
+                    <span class="value">${info.size} tiles</span>
+                </div>
+                <div class="room-stat">
+                    <span class="label">Dimensions</span>
+                    <span class="value">${info.dimensions}</span>
+                </div>
+                <div class="room-stat">
+                    <span class="label">Walls</span>
+                    <span class="value">${info.wallCount}</span>
+                </div>
+            </div>
+            <p class="room-hint">Click elsewhere to deselect</p>
+        `;
+        elements.roomInfo.style.display = 'block';
+    } else {
+        elements.roomInfo.innerHTML = '';
+        elements.roomInfo.style.display = 'none';
+    }
 }
 
 /**

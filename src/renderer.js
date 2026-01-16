@@ -18,6 +18,7 @@ export function render(state, ctx) {
     
     // Render layers in order
     renderTiles(state, ctx, tileSize);
+    renderRooms(state, ctx, tileSize);
     renderTaskIndicators(state, ctx, tileSize);
     renderColonists(state, ctx, tileSize);
     renderBuildPreview(state, ctx, tileSize);
@@ -125,6 +126,69 @@ function renderRubble(ctx, px, py) {
     ctx.fillStyle = '#5a5a6a';
     ctx.fillRect(px + 6, py + 20, 6, 6);
     ctx.fillRect(px + 16, py + 22, 8, 5);
+}
+
+/**
+ * Renders room overlays.
+ */
+function renderRooms(state, ctx, tileSize) {
+    // Highlight all rooms with a subtle tint
+    for (const room of state.rooms) {
+        const isSelected = state.ui.selectedRoom?.id === room.id;
+        
+        for (const tile of room.tiles) {
+            const px = tile.x * tileSize;
+            const py = tile.y * tileSize;
+            
+            if (isSelected) {
+                // Selected room - brighter highlight
+                ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+            } else {
+                // Unselected rooms - subtle tint
+                ctx.fillStyle = 'rgba(100, 150, 255, 0.15)';
+            }
+            ctx.fillRect(px, py, tileSize, tileSize);
+        }
+        
+        // Draw room border for selected room
+        if (isSelected) {
+            ctx.strokeStyle = 'rgba(100, 200, 255, 0.8)';
+            ctx.lineWidth = 2;
+            for (const tile of room.tiles) {
+                const px = tile.x * tileSize;
+                const py = tile.y * tileSize;
+                
+                // Check each edge - only draw if neighbor is not in room
+                const inRoom = (x, y) => room.tiles.some(t => t.x === x && t.y === y);
+                
+                if (!inRoom(tile.x, tile.y - 1)) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(px + tileSize, py);
+                    ctx.stroke();
+                }
+                if (!inRoom(tile.x, tile.y + 1)) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, py + tileSize);
+                    ctx.lineTo(px + tileSize, py + tileSize);
+                    ctx.stroke();
+                }
+                if (!inRoom(tile.x - 1, tile.y)) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(px, py + tileSize);
+                    ctx.stroke();
+                }
+                if (!inRoom(tile.x + 1, tile.y)) {
+                    ctx.beginPath();
+                    ctx.moveTo(px + tileSize, py);
+                    ctx.lineTo(px + tileSize, py + tileSize);
+                    ctx.stroke();
+                }
+            }
+            ctx.lineWidth = 1;
+        }
+    }
 }
 
 /**

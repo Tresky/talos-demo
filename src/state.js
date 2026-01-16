@@ -10,8 +10,8 @@ export function createState() {
     return {
         // Resources in stockpile
         resources: {
-            wood: 0,
-            stone: 0,
+            wood: 1000,
+            stone: 1000,
         },
         
         // Current build mode (null when not building)
@@ -29,9 +29,13 @@ export function createState() {
         // Stockpile locations
         stockpiles: [],
         
+        // Detected rooms (enclosed spaces)
+        rooms: [],
+        
         // UI state
         ui: {
             hoverTile: null,  // { x, y } or null
+            selectedRoom: null,  // room object or null
         },
     };
 }

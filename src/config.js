@@ -26,11 +26,11 @@ export const CONFIG = {
 // Building definitions
 export const BUILDINGS = {
     wall: {
-        cost: { stone: 5 },
+        cost: { stone: 1 },
         tile: 'WALL',
     },
     floor: {
-        cost: { wood: 2 },
+        cost: { wood: 1 },
         tile: 'FLOOR',
     },
     stockpile: {
