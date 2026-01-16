@@ -5,7 +5,7 @@
 
 import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
-import { setTile, addResource } from './state.js';
+import { getTile, setTile, addResource } from './state.js';
 import { addStockpile, tileToPixel, pixelToTile } from './map.js';
 import { clearTask, setCarrying, clearCarrying, setTarget } from './colonist.js';
 import { removeTask, addTask } from './tasks.js';
@@ -194,9 +194,40 @@ function completeHaul(state, colonist) {
 }
 
 /**
+ * Checks if any colonist is standing on a tile.
+ */
+function isColonistOnTile(state, tileX, tileY) {
+    for (const c of state.colonists) {
+        const colTile = pixelToTile(c.x, c.y);
+        if (colTile.x === tileX && colTile.y === tileY) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Processes building work.
  */
 function processBuildWork(state, colonist) {
+    const task = colonist.task;
+    
+    // On first frame of work, check if we can start and place foundation
+    if (colonist.workProgress === 0) {
+        // Check if any colonist is standing on the build site
+        if (isColonistOnTile(state, task.x, task.y)) {
+            // Can't build - someone is standing there
+            // Unassign task so it can be retried later
+            clearTask(colonist, true);
+            return;
+        }
+        
+        // Place foundation to block the tile
+        // Store the original tile so we can restore if cancelled
+        task.originalTile = state.tiles[task.y][task.x];
+        setTile(state, task.x, task.y, TILE.FOUNDATION);
+    }
+    
     colonist.workProgress++;
     
     if (colonist.workProgress >= CONFIG.buildTime) {
@@ -208,6 +239,13 @@ function processBuildWork(state, colonist) {
  * Processes demolish work.
  */
 function processDemolishWork(state, colonist) {
+    const task = colonist.task;
+    
+    // On first frame of work, store original tile
+    if (colonist.workProgress === 0) {
+        task.originalTile = state.tiles[task.y][task.x];
+    }
+    
     colonist.workProgress++;
     
     if (colonist.workProgress >= CONFIG.demolishTime) {

@@ -72,6 +72,9 @@ function renderTile(ctx, tile, px, py, tileSize) {
         case TILE.DOOR:
             renderDoor(ctx, px, py, tileSize);
             break;
+        case TILE.FOUNDATION:
+            renderFoundation(ctx, px, py, tileSize);
+            break;
     }
 }
 
@@ -140,6 +143,22 @@ function renderDoor(ctx, px, py, tileSize) {
     // Handle
     ctx.fillStyle = '#aa8a5a';
     ctx.fillRect(px + tileSize - 12, py + 14, 3, 6);
+}
+
+function renderFoundation(ctx, px, py, tileSize) {
+    // Construction site marker
+    ctx.fillStyle = '#5a5a4a';
+    ctx.fillRect(px, py, tileSize, tileSize);
+    // Diagonal stripes to indicate construction
+    ctx.strokeStyle = '#7a7a5a';
+    ctx.lineWidth = 2;
+    for (let i = -tileSize; i < tileSize * 2; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(px + i, py);
+        ctx.lineTo(px + i + tileSize, py + tileSize);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 1;
 }
 
 /**
@@ -288,12 +307,17 @@ function renderBuildPreview(state, ctx, tileSize) {
     
     const tile = state.tiles[y]?.[x];
     
-    // Check if we can build here
-    let canBuild = tile !== undefined && isBuildable(tile);
+    let canBuild = false;
     
-    // Special case: doors can be placed over walls
-    if (state.buildMode === 'door' && tile === TILE.WALL) {
+    if (state.buildMode === 'demolish') {
+        // Demolish mode - can demolish walls and doors
+        canBuild = tile === TILE.WALL || tile === TILE.DOOR;
+    } else if (state.buildMode === 'door' && tile === TILE.WALL) {
+        // Special case: doors can be placed over walls
         canBuild = true;
+    } else {
+        // Normal build - tile must be buildable
+        canBuild = tile !== undefined && isBuildable(tile);
     }
     
     ctx.fillStyle = canBuild ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';

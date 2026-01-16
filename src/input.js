@@ -3,7 +3,7 @@
 // ============================================
 
 import { CONFIG } from './config.js';
-import { createGatherTask, createBuildTask, addTask } from './tasks.js';
+import { createGatherTask, createBuildTask, createDemolishTask, addTask } from './tasks.js';
 import { getRoomAtTile } from './rooms.js';
 
 /**
@@ -63,9 +63,15 @@ function setupClick(canvas, state) {
  */
 function handleClick(state, tileX, tileY) {
     if (state.buildMode) {
-        // Build mode - try to place building
-        const task = createBuildTask(state, tileX, tileY, state.buildMode);
-        addTask(state, task);
+        if (state.buildMode === 'demolish') {
+            // Demolish mode - create demolish task
+            const task = createDemolishTask(state, tileX, tileY);
+            addTask(state, task);
+        } else {
+            // Build mode - try to place building
+            const task = createBuildTask(state, tileX, tileY, state.buildMode);
+            addTask(state, task);
+        }
     } else {
         // Normal mode - try to queue gather first
         const task = createGatherTask(state, tileX, tileY);

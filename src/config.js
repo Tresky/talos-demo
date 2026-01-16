@@ -42,4 +42,8 @@ export const BUILDINGS = {
         cost: {},
         tile: 'STOCKPILE',
     },
+    demolish: {
+        cost: {},
+        tile: null,  // Special - removes tile
+    },
 };

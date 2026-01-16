@@ -25,6 +25,7 @@ export function initUI() {
             floor: document.getElementById('btn-floor'),
             door: document.getElementById('btn-door'),
             stockpile: document.getElementById('btn-stockpile'),
+            demolish: document.getElementById('btn-demolish'),
         },
     };
 }
@@ -56,7 +57,7 @@ function updateResourceDisplay(state) {
 function updateBuildButtons(state) {
     for (const [type, btn] of Object.entries(elements.buildButtons)) {
         const building = BUILDINGS[type];
-        const affordable = canAfford(state, building.cost);
+        const affordable = building ? canAfford(state, building.cost) : true;
         
         btn.disabled = !affordable;
         btn.classList.toggle('active', state.buildMode === type);

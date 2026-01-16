@@ -12,6 +12,7 @@ export const TILE = {
     STUMP: 6,
     RUBBLE: 7,
     DOOR: 8,
+    FOUNDATION: 9,  // Under construction - not walkable
 };
 
 // Tile metadata - extensible for future tile types
@@ -78,6 +79,13 @@ export const TILE_DATA = {
         walkable: true,
         buildable: false,
         isDoor: true,
+        demolishable: true,
+    },
+    [TILE.FOUNDATION]: {
+        name: 'Foundation',
+        color: '#5a5a4a',
+        walkable: false,
+        buildable: false,
     },
 };
 
