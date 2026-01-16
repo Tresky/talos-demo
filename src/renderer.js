@@ -149,6 +149,13 @@ function renderFoundation(ctx, px, py, tileSize) {
     // Construction site marker
     ctx.fillStyle = '#5a5a4a';
     ctx.fillRect(px, py, tileSize, tileSize);
+    
+    // Clip to tile bounds for diagonal stripes
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px, py, tileSize, tileSize);
+    ctx.clip();
+    
     // Diagonal stripes to indicate construction
     ctx.strokeStyle = '#7a7a5a';
     ctx.lineWidth = 2;
@@ -158,7 +165,8 @@ function renderFoundation(ctx, px, py, tileSize) {
         ctx.lineTo(px + i + tileSize, py + tileSize);
         ctx.stroke();
     }
-    ctx.lineWidth = 1;
+    
+    ctx.restore();
 }
 
 /**
