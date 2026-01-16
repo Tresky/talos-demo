@@ -139,11 +139,36 @@ h2 {
     margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.colonist-item > span:first-child {
+    flex: 1;
 }
 
 .colonist-status {
     color: #888;
     font-style: italic;
+    font-size: 0.85em;
+}
+
+.cancel-btn {
+    background: #e94560;
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.cancel-btn:hover {
+    background: #ff6b6b;
 }
 
 /* ============================================

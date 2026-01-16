@@ -4,7 +4,7 @@
 
 import { BUILDINGS } from './config.js';
 import { canAfford } from './state.js';
-import { getStatusText } from './colonist.js';
+import { getStatusText, clearTask } from './colonist.js';
 import { getRoomInfo } from './rooms.js';
 
 // Cache DOM elements
@@ -68,12 +68,16 @@ function updateBuildButtons(state) {
  * Updates colonist list.
  */
 function updateColonistList(state) {
-    elements.colonistList.innerHTML = state.colonists.map(colonist => `
-        <div class="colonist-item">
-            <span>${colonist.name}</span>
-            <span class="colonist-status">${getStatusText(colonist)}</span>
-        </div>
-    `).join('');
+    elements.colonistList.innerHTML = state.colonists.map(colonist => {
+        const hasTask = colonist.task !== null;
+        return `
+            <div class="colonist-item">
+                <span>${colonist.name}</span>
+                <span class="colonist-status">${getStatusText(colonist)}</span>
+                ${hasTask ? `<button class="cancel-btn" data-colonist-id="${colonist.id}">✕</button>` : ''}
+            </div>
+        `;
+    }).join('');
 }
 
 /**
@@ -139,4 +143,21 @@ export function setupBuildButtons(state, onBuildModeChange) {
             onBuildModeChange(state.buildMode === type ? null : type);
         });
     }
+}
+
+/**
+ * Sets up colonist cancel button handlers using event delegation.
+ */
+export function setupColonistControls(state) {
+    if (!elements) initUI();
+    
+    elements.colonistList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('cancel-btn')) {
+            const colonistId = parseInt(e.target.dataset.colonistId, 10);
+            const colonist = state.colonists.find(c => c.id === colonistId);
+            if (colonist && colonist.task) {
+                clearTask(colonist, true);  // Unassign so task can be picked up again
+            }
+        }
+    });
 }

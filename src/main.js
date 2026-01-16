@@ -9,7 +9,7 @@ import { spawnStartingColonists } from './colonist.js';
 import { assignTasks } from './tasks.js';
 import { updateColonists } from './systems.js';
 import { render } from './renderer.js';
-import { initUI, updateUI, setupBuildButtons } from './ui.js';
+import { initUI, updateUI, setupBuildButtons, setupColonistControls } from './ui.js';
 import { setupInput } from './input.js';
 
 // ============================================
@@ -46,6 +46,9 @@ setupInput(canvas, state, {
 
 // Setup build buttons
 setupBuildButtons(state, setBuildMode);
+
+// Setup colonist controls (cancel buttons)
+setupColonistControls(state);
 
 // ============================================
 // GAME LOOP

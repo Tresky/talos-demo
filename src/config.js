@@ -18,6 +18,10 @@ export const CONFIG = {
     buildTime: 45,
     demolishTime: 30,
     
+    // Idle wandering
+    wanderChance: 0.005,  // Chance per frame to wander when idle (~once every 3 sec)
+    wanderRadius: 3,      // Max tiles to wander from current position
+    
     // Map generation
     treeChance: 0.12,
     rockChance: 0.05,  // 0.17 - 0.12 = 0.05 additional chance

@@ -23,6 +23,7 @@ export function createColonist(name, pixelX, pixelY) {
         pathIndex: 0,    // Current position in path
         targetX: null,   // Current movement target (pixel coords)
         targetY: null,
+        wandering: false, // True if currently wandering (no task, just moving)
     };
 }
 
@@ -132,6 +133,9 @@ export function getStatusText(colonist) {
             default:
                 return 'Working';
         }
+    }
+    if (colonist.wandering) {
+        return 'Wandering';
     }
     return 'Idle';
 }

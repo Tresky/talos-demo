@@ -7,16 +7,36 @@ import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
 import { getTile, setTile, addResource } from './state.js';
 import { addStockpile, tileToPixel, pixelToTile } from './map.js';
-import { clearTask, setCarrying, clearCarrying, setTarget } from './colonist.js';
+import { clearTask, setCarrying, clearCarrying, setTarget, setPath, getColonistTile } from './colonist.js';
 import { removeTask, addTask } from './tasks.js';
 import { detectRooms } from './rooms.js';
-import { isWalkable } from './pathfinding.js';
+import { isWalkable, findPath } from './pathfinding.js';
 
 /**
  * Updates all colonists - movement and work.
  */
 export function updateColonists(state) {
     for (const colonist of state.colonists) {
+        // Handle wandering colonists (no task, just moving)
+        if (colonist.wandering) {
+            updateColonistMovement(state, colonist);
+            if (isAtPathEnd(colonist)) {
+                // Done wandering
+                colonist.wandering = false;
+                colonist.path = [];
+                colonist.pathIndex = 0;
+                colonist.targetX = null;
+                colonist.targetY = null;
+            }
+            continue;
+        }
+        
+        // Check for idle wandering
+        if (!colonist.task && !colonist.carrying && !colonist.wandering) {
+            maybeStartWandering(state, colonist);
+            continue;
+        }
+        
         if (!colonist.task) continue;
         
         updateColonistMovement(state, colonist);
@@ -26,6 +46,44 @@ export function updateColonists(state) {
             updateColonistWork(state, colonist);
         }
     }
+}
+
+/**
+ * Maybe start wandering if idle.
+ */
+function maybeStartWandering(state, colonist) {
+    if (Math.random() > CONFIG.wanderChance) return;
+    
+    const currentTile = getColonistTile(colonist);
+    const radius = CONFIG.wanderRadius;
+    
+    // Find a random walkable tile within radius
+    const candidates = [];
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const x = currentTile.x + dx;
+            const y = currentTile.y + dy;
+            if (isWalkable(state, x, y)) {
+                candidates.push({ x, y });
+            }
+        }
+    }
+    
+    if (candidates.length === 0) return;
+    
+    // Pick random destination
+    const dest = candidates[Math.floor(Math.random() * candidates.length)];
+    
+    // Find path
+    const path = findPath(state, currentTile.x, currentTile.y, dest.x, dest.y);
+    if (!path || path.length < 2) return;
+    
+    // Start wandering
+    colonist.wandering = true;
+    setPath(colonist, path);
+    const firstTarget = tileToPixel(path[0].x, path[0].y);
+    setTarget(colonist, firstTarget.x, firstTarget.y);
 }
 
 /**
