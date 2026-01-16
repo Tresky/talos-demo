@@ -6,11 +6,11 @@
 import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
 import { setTile, addResource } from './state.js';
-import { addStockpile, tileToPixel } from './map.js';
+import { addStockpile, tileToPixel, pixelToTile } from './map.js';
 import { clearTask, setCarrying, clearCarrying, setTarget } from './colonist.js';
 import { removeTask, addTask } from './tasks.js';
 import { detectRooms } from './rooms.js';
-import { getWalkableAdjacent } from './pathfinding.js';
+import { isWalkable } from './pathfinding.js';
 
 /**
  * Updates all colonists - movement and work.
@@ -47,14 +47,35 @@ function isAtPathEnd(colonist) {
 function updateColonistMovement(state, colonist) {
     if (colonist.targetX === null) return;
     
+    // Check if target tile is still walkable before moving
+    const targetTile = pixelToTile(colonist.targetX, colonist.targetY);
+    if (!isWalkable(state, targetTile.x, targetTile.y)) {
+        // Path is blocked - unassign task so it can be reassigned
+        clearTask(colonist, true);
+        return;
+    }
+    
     const dx = colonist.targetX - colonist.x;
     const dy = colonist.targetY - colonist.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
     if (dist > CONFIG.colonistSpeed) {
-        // Move towards current target
-        colonist.x += (dx / dist) * CONFIG.colonistSpeed;
-        colonist.y += (dy / dist) * CONFIG.colonistSpeed;
+        // Check intermediate position won't cross into non-walkable tile
+        const newX = colonist.x + (dx / dist) * CONFIG.colonistSpeed;
+        const newY = colonist.y + (dy / dist) * CONFIG.colonistSpeed;
+        const newTile = pixelToTile(newX, newY);
+        const currentTile = pixelToTile(colonist.x, colonist.y);
+        
+        // Only move if staying in same tile or moving to walkable tile
+        if ((newTile.x === currentTile.x && newTile.y === currentTile.y) || 
+            isWalkable(state, newTile.x, newTile.y)) {
+            colonist.x = newX;
+            colonist.y = newY;
+        } else {
+            // Can't move - path blocked, unassign task
+            clearTask(colonist, true);
+            return;
+        }
     } else {
         // Snap to target
         colonist.x = colonist.targetX;
@@ -64,8 +85,15 @@ function updateColonistMovement(state, colonist) {
         if (colonist.path && colonist.pathIndex < colonist.path.length - 1) {
             colonist.pathIndex++;
             const nextWaypoint = colonist.path[colonist.pathIndex];
-            const target = tileToPixel(nextWaypoint.x, nextWaypoint.y);
-            setTarget(colonist, target.x, target.y);
+            
+            // Check if next waypoint is walkable
+            if (isWalkable(state, nextWaypoint.x, nextWaypoint.y)) {
+                const target = tileToPixel(nextWaypoint.x, nextWaypoint.y);
+                setTarget(colonist, target.x, target.y);
+            } else {
+                // Path blocked - unassign task
+                clearTask(colonist, true);
+            }
         }
     }
 }

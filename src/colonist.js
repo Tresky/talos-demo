@@ -70,8 +70,12 @@ export function setPath(colonist, path) {
 
 /**
  * Clears colonist's current task and resets work state.
+ * If unassign is true, also unassigns the task so it can be picked up again.
  */
-export function clearTask(colonist) {
+export function clearTask(colonist, unassign = false) {
+    if (unassign && colonist.task) {
+        colonist.task.assigned = null;
+    }
     colonist.task = null;
     colonist.workProgress = 0;
     colonist.path = [];
