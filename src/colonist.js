@@ -121,6 +121,8 @@ export function getStatusText(colonist) {
                 return `Gathering ${colonist.task.resource}`;
             case 'build':
                 return `Building ${colonist.task.buildType}`;
+            case 'demolish':
+                return 'Demolishing';
             case 'haul':
                 return 'Hauling';
             default:

@@ -3,7 +3,7 @@
 // ============================================
 
 import { CONFIG, BUILDINGS } from './config.js';
-import { TILE, isGatherable, isBuildable, getResourceType } from './tiles.js';
+import { TILE, isGatherable, isBuildable, getResourceType, isDemolishable } from './tiles.js';
 import { getTile, canAfford, payCost } from './state.js';
 import { isInBounds, tileToPixel, pixelToTile, findNearestStockpile } from './map.js';
 import { isIdle, isCarrying, setTarget, setPath, getColonistTile } from './colonist.js';
@@ -38,17 +38,75 @@ export function createGatherTask(state, tileX, tileY) {
 }
 
 /**
+ * Creates a demolish task.
+ * Returns null if invalid position or not demolishable.
+ */
+export function createDemolishTask(state, tileX, tileY) {
+    if (!isInBounds(tileX, tileY)) return null;
+    
+    const tile = getTile(state, tileX, tileY);
+    if (!isDemolishable(tile)) return null;
+    
+    // Check if task already exists for this tile
+    const exists = state.tasks.some(t => 
+        t.type === 'demolish' && t.x === tileX && t.y === tileY
+    );
+    if (exists) return null;
+    
+    return {
+        id: nextTaskId++,
+        type: 'demolish',
+        x: tileX,
+        y: tileY,
+        assigned: null,
+    };
+}
+
+/**
  * Creates a build task.
  * Returns null if invalid position, can't build there, or can't afford.
+ * If placing a door over a wall, returns an array of [demolishTask, buildTask].
  */
 export function createBuildTask(state, tileX, tileY, buildType) {
     if (!isInBounds(tileX, tileY)) return null;
     
     const tile = getTile(state, tileX, tileY);
-    if (!isBuildable(tile)) return null;
-    
     const building = BUILDINGS[buildType];
     if (!building) return null;
+    
+    // Special case: placing door over wall
+    if (buildType === 'door' && tile === TILE.WALL) {
+        // Check and deduct cost
+        if (!payCost(state, building.cost)) return null;
+        
+        // Create demolish task first
+        const demolishTask = {
+            id: nextTaskId++,
+            type: 'demolish',
+            x: tileX,
+            y: tileY,
+            assigned: null,
+        };
+        
+        // Create pending build task (will be added after demolish completes)
+        const buildTask = {
+            id: nextTaskId++,
+            type: 'build',
+            x: tileX,
+            y: tileY,
+            buildType,
+            assigned: null,
+            pendingAfterDemolish: true,  // Flag to not add to queue yet
+        };
+        
+        // Store the follow-up build task on the demolish task
+        demolishTask.followUpTask = buildTask;
+        
+        return demolishTask;
+    }
+    
+    // Normal build - tile must be buildable
+    if (!isBuildable(tile)) return null;
     
     // Check and deduct cost
     if (!payCost(state, building.cost)) return null;

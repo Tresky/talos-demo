@@ -45,6 +45,7 @@ export const TILE_DATA = {
         color: '#8b7355',
         walkable: false,
         buildable: false,
+        demolishable: true,
     },
     [TILE.FLOOR]: {
         name: 'Floor',
@@ -99,4 +100,8 @@ export function getResourceType(tileType) {
 
 export function getDepletedTile(tileType) {
     return getTileData(tileType).depletedTile ?? TILE.GRASS;
+}
+
+export function isDemolishable(tileType) {
+    return getTileData(tileType).demolishable === true;
 }

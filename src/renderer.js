@@ -3,8 +3,7 @@
 // ============================================
 
 import { CONFIG } from './config.js';
-import { TILE, TILE_DATA } from './tiles.js';
-import { isBuildable } from './tiles.js';
+import { TILE, TILE_DATA, isBuildable } from './tiles.js';
 import { getWorkTime } from './systems.js';
 
 /**
@@ -214,7 +213,21 @@ function renderTaskIndicators(state, ctx, tileSize) {
         const px = task.x * tileSize;
         const py = task.y * tileSize;
         
-        ctx.strokeStyle = task.type === 'gather' ? '#ffaa00' : '#00aaff';
+        // Different colors for different task types
+        switch (task.type) {
+            case 'gather':
+                ctx.strokeStyle = '#ffaa00';  // Orange
+                break;
+            case 'build':
+                ctx.strokeStyle = '#00aaff';  // Blue
+                break;
+            case 'demolish':
+                ctx.strokeStyle = '#ff5555';  // Red
+                break;
+            default:
+                ctx.strokeStyle = '#ffffff';
+        }
+        
         ctx.lineWidth = 2;
         ctx.strokeRect(px + 1, py + 1, tileSize - 2, tileSize - 2);
         ctx.lineWidth = 1;
@@ -274,7 +287,14 @@ function renderBuildPreview(state, ctx, tileSize) {
     const py = y * tileSize;
     
     const tile = state.tiles[y]?.[x];
-    const canBuild = tile !== undefined && isBuildable(tile);
+    
+    // Check if we can build here
+    let canBuild = tile !== undefined && isBuildable(tile);
+    
+    // Special case: doors can be placed over walls
+    if (state.buildMode === 'door' && tile === TILE.WALL) {
+        canBuild = true;
+    }
     
     ctx.fillStyle = canBuild ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
     ctx.fillRect(px, py, tileSize, tileSize);

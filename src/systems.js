@@ -8,7 +8,7 @@ import { TILE, getDepletedTile } from './tiles.js';
 import { setTile, addResource } from './state.js';
 import { addStockpile, tileToPixel } from './map.js';
 import { clearTask, setCarrying, clearCarrying, setTarget } from './colonist.js';
-import { removeTask } from './tasks.js';
+import { removeTask, addTask } from './tasks.js';
 import { detectRooms } from './rooms.js';
 import { getWalkableAdjacent } from './pathfinding.js';
 
@@ -92,6 +92,12 @@ function updateColonistWork(state, colonist) {
                 processBuildWork(state, colonist);
             }
             break;
+        case 'demolish':
+            // Verify colonist is adjacent to demolish target
+            if (isAdjacent(colonist, task.x, task.y)) {
+                processDemolishWork(state, colonist);
+            }
+            break;
     }
 }
 
@@ -171,6 +177,39 @@ function processBuildWork(state, colonist) {
 }
 
 /**
+ * Processes demolish work.
+ */
+function processDemolishWork(state, colonist) {
+    colonist.workProgress++;
+    
+    if (colonist.workProgress >= CONFIG.demolishTime) {
+        completeDemolish(state, colonist);
+    }
+}
+
+/**
+ * Completes a demolish task.
+ */
+function completeDemolish(state, colonist) {
+    const task = colonist.task;
+    
+    // Remove the structure, replace with rubble
+    setTile(state, task.x, task.y, TILE.RUBBLE);
+    
+    // Re-detect rooms since walls changed
+    detectRooms(state);
+    
+    // If there's a follow-up task (e.g., build door), add it to queue
+    if (task.followUpTask) {
+        addTask(state, task.followUpTask);
+    }
+    
+    // Remove task and reset colonist
+    removeTask(state, task);
+    clearTask(colonist);
+}
+
+/**
  * Completes a build task.
  */
 function completeBuild(state, colonist) {
@@ -205,6 +244,7 @@ export function getWorkTime(taskType) {
     switch (taskType) {
         case 'gather': return CONFIG.gatherTime;
         case 'build': return CONFIG.buildTime;
+        case 'demolish': return CONFIG.demolishTime;
         default: return 0;
     }
 }

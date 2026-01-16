@@ -16,6 +16,7 @@ export const CONFIG = {
     // Work timings (in frames, ~60fps)
     gatherTime: 60,
     buildTime: 45,
+    demolishTime: 30,
     
     // Map generation
     treeChance: 0.12,
