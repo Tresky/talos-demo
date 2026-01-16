@@ -129,6 +129,9 @@ function initColonists() {
 // ============================================
 
 function createGatherTask(tileX, tileY) {
+    // Bounds check
+    if (tileX < 0 || tileX >= CONFIG.mapWidth || tileY < 0 || tileY >= CONFIG.mapHeight) return null;
+    
     const tile = state.tiles[tileY][tileX];
     if (tile !== TILE.TREE && tile !== TILE.ROCK) return null;
     
@@ -147,6 +150,9 @@ function createGatherTask(tileX, tileY) {
 }
 
 function createBuildTask(tileX, tileY, buildType) {
+    // Bounds check
+    if (tileX < 0 || tileX >= CONFIG.mapWidth || tileY < 0 || tileY >= CONFIG.mapHeight) return null;
+    
     const tile = state.tiles[tileY][tileX];
     if (tile !== TILE.GRASS && tile !== TILE.STUMP && tile !== TILE.RUBBLE) return null;
     
@@ -478,7 +484,8 @@ function updateUI() {
 // ============================================
 
 function canBuildAt(x, y) {
-    const tile = state.tiles[y]?.[x];
+    if (x < 0 || x >= CONFIG.mapWidth || y < 0 || y >= CONFIG.mapHeight) return false;
+    const tile = state.tiles[y][x];
     return tile === TILE.GRASS || tile === TILE.STUMP || tile === TILE.RUBBLE;
 }
 
