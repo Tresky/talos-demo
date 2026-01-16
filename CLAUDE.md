@@ -42,6 +42,7 @@ talos-demo/
     ├── colonist.js     # Colonist entity and helpers
     ├── tasks.js        # Task creation and assignment
     ├── systems.js      # Movement, work completion logic
+    ├── rooms.js        # Room detection (flood fill for enclosed spaces)
     ├── renderer.js     # Canvas rendering
     ├── ui.js           # DOM/sidebar updates
     └── input.js        # Mouse and keyboard handling
@@ -110,9 +111,16 @@ DOM manipulation for the sidebar.
 ### `input.js`
 Event handling.
 - `setupInput()` - attaches all listeners
-- Click handling for gather/build
+- Click handling for gather/build/room selection
 - Hover tracking for build preview
 - Keyboard (Escape to cancel)
+
+### `rooms.js`
+Room detection system.
+- `detectRooms()` - flood fill to find enclosed spaces (called when walls placed)
+- `getRoomAtTile()` - finds which room contains a tile
+- `getRoomInfo()` - returns display info for a room
+- Room = contiguous interior tiles fully enclosed by walls (doesn't touch map edge)
 
 ---
 
@@ -217,6 +225,9 @@ Uses `requestAnimationFrame` (~60fps). All timings in config are frame counts, n
 - [ ] Save/load
 - [ ] Sound effects
 - [ ] Mobile touch support
+- [ ] Room types/designations (bedroom, workshop, etc.)
+- [ ] Room requirements (furniture, size minimums)
+- [ ] Room effects on colonists
 
 ---
 
