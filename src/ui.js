@@ -6,6 +6,7 @@ import { BUILDINGS } from './config.js';
 import { canAfford, getResources } from './state.js';
 import { getStatusText, clearTask } from './colonist.js';
 import { getRoomInfo } from './rooms.js';
+import { removeTask } from './tasks.js';
 
 // Cache DOM elements
 let elements = null;
@@ -157,7 +158,9 @@ export function setupColonistControls(state) {
             const colonistId = parseInt(e.target.dataset.colonistId, 10);
             const colonist = state.colonists.find(c => c.id === colonistId);
             if (colonist && colonist.task) {
-                clearTask(colonist, true);  // Unassign so task can be picked up again
+                const task = colonist.task;
+                clearTask(colonist, false);  // Clear colonist's task reference
+                removeTask(state, task);     // Remove task from queue entirely
             }
         }
     });
