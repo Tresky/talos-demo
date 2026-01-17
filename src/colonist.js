@@ -124,12 +124,14 @@ export function getStatusText(colonist) {
         switch (colonist.task.type) {
             case 'gather':
                 return `Gathering ${colonist.task.resource}`;
+            case 'pickup':
+                return `Picking up ${colonist.task.resource}`;
             case 'build':
                 return `Building ${colonist.task.buildType}`;
             case 'demolish':
                 return 'Demolishing';
             case 'haul':
-                return 'Hauling';
+                return 'Storing';
             default:
                 return 'Working';
         }

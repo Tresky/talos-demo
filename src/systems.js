@@ -5,12 +5,13 @@
 
 import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
-import { getTile, setTile, addResource } from './state.js';
+import { getTile, setTile } from './state.js';
 import { addStockpile, tileToPixel, pixelToTile } from './map.js';
 import { clearTask, setCarrying, clearCarrying, setTarget, setPath, getColonistTile } from './colonist.js';
 import { removeTask, addTask } from './tasks.js';
 import { detectRooms } from './rooms.js';
 import { isWalkable, findPath } from './pathfinding.js';
+import { createItemStack, addItemStack, removeItemStack, findStockpileStackAt, findAvailableStockpile } from './items.js';
 
 /**
  * Updates all colonists - movement and work.
@@ -169,6 +170,10 @@ function updateColonistWork(state, colonist) {
                 processGatherWork(state, colonist);
             }
             break;
+        case 'pickup':
+            // Pickup is at the stack location
+            processPickupWork(state, colonist);
+            break;
         case 'haul':
             processHaulWork(state, colonist);
             break;
@@ -213,14 +218,15 @@ function processGatherWork(state, colonist) {
 }
 
 /**
- * Completes a gather task.
+ * Completes a gather task - drops resource on the ground.
  */
 function completeGather(state, colonist) {
     const task = colonist.task;
     const tile = state.tiles[task.y][task.x];
     
-    // Pick up resource
-    setCarrying(colonist, task.resource, 1);
+    // Create item stack on the ground at the resource location
+    const stack = createItemStack(task.resource, 1, 'ground', task.x, task.y);
+    addItemStack(state, stack);
     
     // Deplete the tile
     const depletedTile = getDepletedTile(tile);
@@ -232,20 +238,69 @@ function completeGather(state, colonist) {
 }
 
 /**
- * Processes hauling - instant deposit.
+ * Processes pickup work - instant pickup.
+ */
+function processPickupWork(state, colonist) {
+    completePickup(state, colonist);
+}
+
+/**
+ * Completes a pickup task - colonist picks up the stack.
+ */
+function completePickup(state, colonist) {
+    const task = colonist.task;
+    
+    // Find the stack
+    const stack = state.itemStacks.find(s => s.id === task.stackId);
+    if (stack) {
+        // Pick up the stack
+        setCarrying(colonist, stack.type, stack.amount);
+        colonist.carryingStackId = stack.id;
+        
+        // Remove from ground
+        removeItemStack(state, stack);
+    }
+    
+    // Remove pickup task
+    removeTask(state, task);
+    clearTask(colonist);
+}
+
+/**
+ * Processes hauling - deposit at stockpile.
  */
 function processHaulWork(state, colonist) {
     completeHaul(state, colonist);
 }
 
 /**
- * Completes a haul task.
+ * Completes a haul task - deposits in stockpile.
  */
 function completeHaul(state, colonist) {
-    // Deposit carried resources
+    const task = colonist.task;
+    
+    // Deposit carried resources into the stockpile
     if (colonist.carrying) {
-        addResource(state, colonist.carrying.type, colonist.carrying.amount);
+        // Check if this stockpile already has a stack
+        const existingStack = findStockpileStackAt(state, task.x, task.y);
+        
+        if (existingStack) {
+            // Add to existing stack (should be same type due to findAvailableStockpile)
+            existingStack.amount += colonist.carrying.amount;
+        } else {
+            // Create new stack in stockpile
+            const stack = createItemStack(
+                colonist.carrying.type,
+                colonist.carrying.amount,
+                'stockpile',
+                task.x,
+                task.y
+            );
+            addItemStack(state, stack);
+        }
+        
         clearCarrying(colonist);
+        colonist.carryingStackId = null;
     }
     
     clearTask(colonist);

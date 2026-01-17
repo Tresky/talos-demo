@@ -5,6 +5,7 @@
 import { CONFIG } from './config.js';
 import { TILE, TILE_DATA, isBuildable } from './tiles.js';
 import { getWorkTime } from './systems.js';
+import { findStockpileStackAt, getGroundStacks } from './items.js';
 
 /**
  * Main render function - draws the entire game.
@@ -17,6 +18,7 @@ export function render(state, ctx) {
     
     // Render layers in order
     renderTiles(state, ctx, tileSize);
+    renderItemStacks(state, ctx, tileSize);
     renderRooms(state, ctx, tileSize);
     renderTaskIndicators(state, ctx, tileSize);
     renderColonists(state, ctx, tileSize);
@@ -33,7 +35,7 @@ function renderTiles(state, ctx, tileSize) {
             const px = x * tileSize;
             const py = y * tileSize;
             
-            renderTile(ctx, tile, px, py, tileSize);
+            renderTile(ctx, tile, px, py, tileSize, state, x, y);
         }
     }
 }
@@ -41,7 +43,7 @@ function renderTiles(state, ctx, tileSize) {
 /**
  * Renders a single tile.
  */
-function renderTile(ctx, tile, px, py, tileSize) {
+function renderTile(ctx, tile, px, py, tileSize, state, tileX, tileY) {
     // Always draw grass base
     ctx.fillStyle = TILE_DATA[TILE.GRASS].color;
     ctx.fillRect(px, py, tileSize, tileSize);
@@ -61,7 +63,7 @@ function renderTile(ctx, tile, px, py, tileSize) {
             renderFloor(ctx, px, py, tileSize);
             break;
         case TILE.STOCKPILE:
-            renderStockpile(ctx, px, py, tileSize);
+            renderStockpile(ctx, px, py, tileSize, state, tileX, tileY);
             break;
         case TILE.STUMP:
             renderStump(ctx, px, py);
@@ -113,13 +115,21 @@ function renderFloor(ctx, px, py, tileSize) {
     ctx.strokeRect(px + 1, py + 1, tileSize - 2, tileSize - 2);
 }
 
-function renderStockpile(ctx, px, py, tileSize) {
+function renderStockpile(ctx, px, py, tileSize, state, tileX, tileY) {
     ctx.fillStyle = TILE_DATA[TILE.STOCKPILE].color;
     ctx.fillRect(px, py, tileSize, tileSize);
     ctx.strokeStyle = '#6a6a5a';
     ctx.setLineDash([4, 4]);
     ctx.strokeRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
     ctx.setLineDash([]);
+    
+    // Render contents if this stockpile has items
+    if (state) {
+        const stack = findStockpileStackAt(state, tileX, tileY);
+        if (stack) {
+            renderStackContents(ctx, px, py, tileSize, stack.type, stack.amount);
+        }
+    }
 }
 
 function renderStump(ctx, px, py) {
@@ -167,6 +177,74 @@ function renderFoundation(ctx, px, py, tileSize) {
     }
     
     ctx.restore();
+}
+
+/**
+ * Renders the contents of a stockpile or ground stack.
+ */
+function renderStackContents(ctx, px, py, tileSize, resourceType, amount) {
+    const centerX = px + tileSize / 2;
+    const centerY = py + tileSize / 2;
+    
+    // Draw resource icon
+    if (resourceType === 'wood') {
+        // Wood log icon
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(centerX - 8, centerY - 4, 16, 8);
+        ctx.fillStyle = '#6b4a1b';
+        ctx.beginPath();
+        ctx.arc(centerX - 8, centerY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(centerX + 8, centerY, 4, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (resourceType === 'stone') {
+        // Stone icon
+        ctx.fillStyle = '#7a7a8a';
+        ctx.beginPath();
+        ctx.moveTo(centerX - 6, centerY + 4);
+        ctx.lineTo(centerX, centerY - 6);
+        ctx.lineTo(centerX + 6, centerY + 4);
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // Draw count badge
+    if (amount > 0) {
+        const badgeX = px + tileSize - 8;
+        const badgeY = py + tileSize - 8;
+        
+        // Badge background
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, 7, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Badge text
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(amount.toString(), badgeX, badgeY);
+    }
+}
+
+/**
+ * Renders item stacks on the ground.
+ */
+function renderItemStacks(state, ctx, tileSize) {
+    const groundStacks = getGroundStacks(state);
+    
+    for (const stack of groundStacks) {
+        const px = stack.x * tileSize;
+        const py = stack.y * tileSize;
+        
+        // Draw a subtle highlight under ground stacks
+        ctx.fillStyle = 'rgba(255, 200, 100, 0.2)';
+        ctx.fillRect(px + 4, py + 4, tileSize - 8, tileSize - 8);
+        
+        renderStackContents(ctx, px, py, tileSize, stack.type, stack.amount);
+    }
 }
 
 /**
@@ -244,6 +322,9 @@ function renderTaskIndicators(state, ctx, tileSize) {
         switch (task.type) {
             case 'gather':
                 ctx.strokeStyle = '#ffaa00';  // Orange
+                break;
+            case 'pickup':
+                ctx.strokeStyle = '#ffdd00';  // Yellow
                 break;
             case 'build':
                 ctx.strokeStyle = '#00aaff';  // Blue

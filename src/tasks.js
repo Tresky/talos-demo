@@ -5,9 +5,10 @@
 import { CONFIG, BUILDINGS } from './config.js';
 import { TILE, isGatherable, isBuildable, getResourceType, isDemolishable } from './tiles.js';
 import { getTile, canAfford, payCost } from './state.js';
-import { isInBounds, tileToPixel, pixelToTile, findNearestStockpile } from './map.js';
+import { isInBounds, tileToPixel, pixelToTile } from './map.js';
 import { isIdle, isCarrying, setTarget, setPath, getColonistTile } from './colonist.js';
 import { findPath, findWorkPosition } from './pathfinding.js';
+import { findAvailableStockpile, getGroundStacks } from './items.js';
 
 let nextTaskId = 0;
 
@@ -122,11 +123,40 @@ export function createBuildTask(state, tileX, tileY, buildType) {
 }
 
 /**
+ * Creates a pickup task for a ground item stack.
+ */
+export function createPickupTask(state, stack) {
+    // Check if task already exists for this stack
+    const exists = state.tasks.some(t => 
+        t.type === 'pickup' && t.stackId === stack.id
+    );
+    if (exists) return null;
+    
+    return {
+        id: nextTaskId++,
+        type: 'pickup',
+        x: stack.x,
+        y: stack.y,
+        stackId: stack.id,
+        resource: stack.type,
+        assigned: null,
+    };
+}
+
+/**
  * Creates a haul task for a colonist carrying resources.
+ * Finds a compatible stockpile (same type or empty).
  */
 export function createHaulTask(state, colonist) {
+    if (!colonist.carrying) return null;
+    
     const colonistTile = pixelToTile(colonist.x, colonist.y);
-    const stockpile = findNearestStockpile(state, colonistTile.x, colonistTile.y);
+    const stockpile = findAvailableStockpile(
+        state, 
+        colonist.carrying.type, 
+        colonistTile.x, 
+        colonistTile.y
+    );
     
     if (!stockpile) return null;
     
@@ -143,6 +173,24 @@ export function createHaulTask(state, colonist) {
  * Assigns pending tasks to idle colonists.
  */
 export function assignTasks(state) {
+    // First, create pickup tasks for unhauled ground stacks
+    for (const stack of getGroundStacks(state)) {
+        // Check if there's already a pickup task for this stack
+        const hasPickupTask = state.tasks.some(t => 
+            t.type === 'pickup' && t.stackId === stack.id
+        );
+        if (!hasPickupTask) {
+            // Check if there's an available stockpile for this type
+            const stockpile = findAvailableStockpile(state, stack.type, stack.x, stack.y);
+            if (stockpile) {
+                const pickupTask = createPickupTask(state, stack);
+                if (pickupTask) {
+                    state.tasks.push(pickupTask);
+                }
+            }
+        }
+    }
+    
     for (const colonist of state.colonists) {
         if (!isIdle(colonist)) continue;
         
@@ -168,12 +216,25 @@ export function assignTasks(state) {
         // Find first unassigned task with valid path
         for (const task of state.tasks) {
             if (task.assigned === null) {
-                // Find work position (adjacent to task target)
-                const workPos = findWorkPosition(state, task.x, task.y, colonistTile.x, colonistTile.y);
-                if (!workPos) continue;  // No accessible work position
+                let targetX = task.x;
+                let targetY = task.y;
+                let needsAdjacent = true;
+                
+                // Pickup tasks go directly to the stack location
+                if (task.type === 'pickup') {
+                    needsAdjacent = false;
+                }
+                
+                if (needsAdjacent) {
+                    // Find work position (adjacent to task target)
+                    const workPos = findWorkPosition(state, task.x, task.y, colonistTile.x, colonistTile.y);
+                    if (!workPos) continue;  // No accessible work position
+                    targetX = workPos.x;
+                    targetY = workPos.y;
+                }
                 
                 // Find path to work position
-                const path = findPath(state, colonistTile.x, colonistTile.y, workPos.x, workPos.y);
+                const path = findPath(state, colonistTile.x, colonistTile.y, targetX, targetY);
                 if (!path || path.length === 0) continue;  // No path
                 
                 // Assign task

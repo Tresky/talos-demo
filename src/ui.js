@@ -3,7 +3,7 @@
 // ============================================
 
 import { BUILDINGS } from './config.js';
-import { canAfford } from './state.js';
+import { canAfford, getResources } from './state.js';
 import { getStatusText, clearTask } from './colonist.js';
 import { getRoomInfo } from './rooms.js';
 
@@ -47,8 +47,9 @@ export function updateUI(state) {
  * Updates resource counters.
  */
 function updateResourceDisplay(state) {
-    elements.woodCount.textContent = state.resources.wood;
-    elements.stoneCount.textContent = state.resources.stone;
+    const resources = getResources(state);
+    elements.woodCount.textContent = resources.wood;
+    elements.stoneCount.textContent = resources.stone;
 }
 
 /**

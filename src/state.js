@@ -2,18 +2,14 @@
 // GAME STATE
 // ============================================
 
+import { getTotalStockpileResources } from './items.js';
+
 /**
  * Creates a fresh game state object.
  * State is the single source of truth for the game.
  */
 export function createState() {
     return {
-        // Resources in stockpile
-        resources: {
-            wood: 1000,
-            stone: 1000,
-        },
-        
         // Current build mode (null when not building)
         buildMode: null,
         
@@ -28,6 +24,9 @@ export function createState() {
         
         // Stockpile locations
         stockpiles: [],
+        
+        // Item stacks (on ground or in stockpiles)
+        itemStacks: [],
         
         // Detected rooms (enclosed spaces)
         rooms: [],
@@ -62,32 +61,23 @@ export function setTile(state, x, y, tileType) {
 }
 
 /**
- * Adds resources to the stockpile.
+ * Gets total resources available in stockpiles.
+ * This replaces the old global resource tracking.
  */
-export function addResource(state, type, amount) {
-    if (state.resources[type] !== undefined) {
-        state.resources[type] += amount;
-    }
-}
-
-/**
- * Removes resources from the stockpile.
- * Returns true if successful (had enough resources).
- */
-export function removeResource(state, type, amount) {
-    if (state.resources[type] !== undefined && state.resources[type] >= amount) {
-        state.resources[type] -= amount;
-        return true;
-    }
-    return false;
+export function getResources(state) {
+    return {
+        wood: getTotalStockpileResources(state, 'wood'),
+        stone: getTotalStockpileResources(state, 'stone'),
+    };
 }
 
 /**
  * Checks if we can afford a cost object { resource: amount, ... }
  */
 export function canAfford(state, cost) {
+    const resources = getResources(state);
     for (const [resource, amount] of Object.entries(cost)) {
-        if ((state.resources[resource] || 0) < amount) {
+        if ((resources[resource] || 0) < amount) {
             return false;
         }
     }
@@ -95,13 +85,35 @@ export function canAfford(state, cost) {
 }
 
 /**
- * Deducts a cost object from resources.
+ * Deducts a cost object from stockpile resources.
+ * Removes items from stockpiles starting with the first ones found.
  * Returns true if successful.
  */
 export function payCost(state, cost) {
     if (!canAfford(state, cost)) return false;
-    for (const [resource, amount] of Object.entries(cost)) {
-        state.resources[resource] -= amount;
+    
+    for (const [resourceType, amountNeeded] of Object.entries(cost)) {
+        let remaining = amountNeeded;
+        
+        // Find stockpile stacks of this type and deduct
+        for (const stack of state.itemStacks) {
+            if (stack.location !== 'stockpile' || stack.type !== resourceType) continue;
+            if (remaining <= 0) break;
+            
+            if (stack.amount <= remaining) {
+                // Take the whole stack
+                remaining -= stack.amount;
+                stack.amount = 0;
+            } else {
+                // Take partial
+                stack.amount -= remaining;
+                remaining = 0;
+            }
+        }
+        
+        // Clean up empty stacks
+        state.itemStacks = state.itemStacks.filter(s => s.amount > 0);
     }
+    
     return true;
 }
