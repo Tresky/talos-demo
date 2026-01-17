@@ -215,6 +215,44 @@ h2 {
     font-style: italic;
 }
 
+.room-type-select {
+    background: #1a1a2e;
+    color: #bbe1fa;
+    border: 1px solid #4a4a6a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.room-type-select:hover {
+    border-color: #3282b8;
+}
+
+.furniture-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #4a4a6a;
+}
+
+.furniture-section h3 {
+    font-size: 0.95em;
+    color: #aa55ff;
+    margin-bottom: 8px;
+}
+
+.furniture-btn {
+    background: #4a3a6a;
+}
+
+.furniture-btn:hover:not(:disabled) {
+    background: #6a4a8a;
+}
+
+.furniture-btn.active {
+    background: #aa55ff;
+}
+
 /* ============================================
    Instructions & Status
    ============================================ */

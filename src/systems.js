@@ -3,7 +3,7 @@
 // Movement, work completion, and update logic
 // ============================================
 
-import { CONFIG, BUILDINGS } from './config.js';
+import { CONFIG, BUILDINGS, FURNITURE } from './config.js';
 import { TILE, getDepletedTile } from './tiles.js';
 import { getTile, setTile } from './state.js';
 import { addStockpile, tileToPixel, pixelToTile } from './map.js';
@@ -187,6 +187,12 @@ function updateColonistWork(state, colonist) {
             // Verify colonist is adjacent to demolish target
             if (isAdjacent(colonist, task.x, task.y)) {
                 processDemolishWork(state, colonist);
+            }
+            break;
+        case 'furniture':
+            // Verify colonist is adjacent to furniture target
+            if (isAdjacent(colonist, task.x, task.y)) {
+                processFurnitureWork(state, colonist);
             }
             break;
     }
@@ -417,12 +423,62 @@ function completeBuild(state, colonist) {
 }
 
 /**
+ * Processes furniture building work.
+ */
+function processFurnitureWork(state, colonist) {
+    const task = colonist.task;
+    
+    // On first frame of work, check if we can start and place foundation
+    if (colonist.workProgress === 0) {
+        // Check if any colonist is standing on the build site
+        if (isColonistOnTile(state, task.x, task.y)) {
+            clearTask(colonist, true);
+            return;
+        }
+        
+        // Place foundation
+        task.originalTile = state.tiles[task.y][task.x];
+        setTile(state, task.x, task.y, TILE.FOUNDATION);
+    }
+    
+    colonist.workProgress++;
+    
+    if (colonist.workProgress >= CONFIG.buildTime) {
+        completeFurniture(state, colonist);
+    }
+}
+
+/**
+ * Completes a furniture task.
+ */
+function completeFurniture(state, colonist) {
+    const task = colonist.task;
+    const furniture = FURNITURE[task.furnitureId];
+    
+    if (furniture) {
+        // Place the furniture tile
+        const tileType = TILE[furniture.tile];
+        setTile(state, task.x, task.y, tileType);
+        
+        // Special handling for storage furniture (crates)
+        if (furniture.isStorage) {
+            addStockpile(state, task.x, task.y);
+        }
+    }
+    
+    // Remove task and reset colonist
+    removeTask(state, task);
+    clearTask(colonist);
+}
+
+/**
  * Gets the work time for a task type.
  */
 export function getWorkTime(taskType) {
     switch (taskType) {
         case 'gather': return CONFIG.gatherTime;
         case 'build': return CONFIG.buildTime;
+        case 'furniture': return CONFIG.buildTime;
         case 'demolish': return CONFIG.demolishTime;
         default: return 0;
     }

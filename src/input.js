@@ -2,8 +2,8 @@
 // INPUT HANDLING
 // ============================================
 
-import { CONFIG } from './config.js';
-import { createGatherTask, createBuildTask, createDemolishTask, addTask } from './tasks.js';
+import { CONFIG, FURNITURE } from './config.js';
+import { createGatherTask, createBuildTask, createDemolishTask, createFurnitureTask, addTask } from './tasks.js';
 import { getRoomAtTile } from './rooms.js';
 
 /**
@@ -67,6 +67,14 @@ function handleClick(state, tileX, tileY) {
             // Demolish mode - create demolish task
             const task = createDemolishTask(state, tileX, tileY);
             addTask(state, task);
+        } else if (state.buildMode.startsWith('furniture_')) {
+            // Furniture mode - place furniture in room
+            const furnitureId = state.buildMode.replace('furniture_', '');
+            const room = getRoomAtTile(state, tileX, tileY);
+            if (room) {
+                const task = createFurnitureTask(state, tileX, tileY, furnitureId, room);
+                addTask(state, task);
+            }
         } else {
             // Build mode - try to place building
             const task = createBuildTask(state, tileX, tileY, state.buildMode);

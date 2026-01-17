@@ -51,3 +51,50 @@ export const BUILDINGS = {
         tile: null,  // Special - removes tile
     },
 };
+
+// Room type definitions
+export const ROOM_TYPES = {
+    none: {
+        name: 'Unassigned',
+        color: 'rgba(100, 150, 255, 0.15)',
+        furniture: [],
+    },
+    house: {
+        name: 'House',
+        color: 'rgba(255, 200, 100, 0.2)',
+        furniture: ['bed'],
+    },
+    carpenter: {
+        name: 'Carpenter',
+        color: 'rgba(200, 150, 100, 0.2)',
+        furniture: ['workbench'],
+    },
+    storage: {
+        name: 'Storage',
+        color: 'rgba(150, 150, 200, 0.2)',
+        furniture: ['crate'],
+    },
+};
+
+// Furniture definitions
+export const FURNITURE = {
+    bed: {
+        name: 'Bed',
+        cost: { wood: 3 },
+        tile: 'BED',
+        roomType: 'house',
+    },
+    workbench: {
+        name: 'Workbench',
+        cost: { wood: 4 },
+        tile: 'WORKBENCH',
+        roomType: 'carpenter',
+    },
+    crate: {
+        name: 'Crate',
+        cost: { wood: 2 },
+        tile: 'CRATE',
+        roomType: 'storage',
+        isStorage: true,
+    },
+};

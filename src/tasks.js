@@ -2,7 +2,7 @@
 // TASK SYSTEM
 // ============================================
 
-import { CONFIG, BUILDINGS } from './config.js';
+import { CONFIG, BUILDINGS, FURNITURE } from './config.js';
 import { TILE, isGatherable, isBuildable, getResourceType, isDemolishable } from './tiles.js';
 import { getTile, canAfford, payCost } from './state.js';
 import { isInBounds, tileToPixel, pixelToTile } from './map.js';
@@ -118,6 +118,44 @@ export function createBuildTask(state, tileX, tileY, buildType) {
         x: tileX,
         y: tileY,
         buildType,
+        assigned: null,
+    };
+}
+
+/**
+ * Creates a furniture task.
+ * Returns null if invalid position, wrong room type, or can't afford.
+ */
+export function createFurnitureTask(state, tileX, tileY, furnitureId, room) {
+    if (!isInBounds(tileX, tileY)) return null;
+    
+    const tile = getTile(state, tileX, tileY);
+    const furniture = FURNITURE[furnitureId];
+    if (!furniture) return null;
+    
+    // Check if furniture matches room type
+    if (furniture.roomType && room.type !== furniture.roomType) {
+        return null;
+    }
+    
+    // Furniture can only be placed on floor tiles
+    if (tile !== TILE.FLOOR && tile !== TILE.GRASS) return null;
+    
+    // Check if task already exists for this tile
+    const exists = state.tasks.some(t => 
+        (t.type === 'build' || t.type === 'furniture') && t.x === tileX && t.y === tileY
+    );
+    if (exists) return null;
+    
+    // Check and deduct cost
+    if (!payCost(state, furniture.cost)) return null;
+    
+    return {
+        id: nextTaskId++,
+        type: 'furniture',
+        x: tileX,
+        y: tileY,
+        furnitureId,
         assigned: null,
     };
 }

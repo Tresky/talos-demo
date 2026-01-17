@@ -115,10 +115,21 @@ function getBounds(tiles) {
 /**
  * Detects all enclosed rooms in the map.
  * Called after walls are placed/removed.
+ * Preserves room type assignments when possible.
  */
 export function detectRooms(state) {
     const visited = new Set();
     const newRooms = [];
+    
+    // Store old room types by their tile positions for preservation
+    const oldRoomTypes = new Map();
+    for (const room of state.rooms) {
+        if (room.type && room.type !== 'none') {
+            // Use first tile as key
+            const key = `${room.tiles[0].x},${room.tiles[0].y}`;
+            oldRoomTypes.set(key, room.type);
+        }
+    }
     
     // Scan entire map for enclosed spaces
     for (let y = 0; y < CONFIG.mapHeight; y++) {
@@ -136,12 +147,23 @@ export function detectRooms(state) {
                 const bounds = getBounds(result.tiles);
                 const walls = findBoundingWalls(state, result.tiles);
                 
+                // Try to preserve room type from old room
+                let roomType = 'none';
+                for (const tile of result.tiles) {
+                    const tileKey = `${tile.x},${tile.y}`;
+                    if (oldRoomTypes.has(tileKey)) {
+                        roomType = oldRoomTypes.get(tileKey);
+                        break;
+                    }
+                }
+                
                 newRooms.push({
                     id: nextRoomId++,
                     tiles: result.tiles,
                     walls: walls,
                     bounds: bounds,
                     size: result.tiles.length,
+                    type: roomType,
                     name: `Room ${nextRoomId}`,
                 });
             }
@@ -155,10 +177,20 @@ export function detectRooms(state) {
         const stillExists = state.rooms.find(r => r.id === state.ui.selectedRoom.id);
         if (!stillExists) {
             state.ui.selectedRoom = null;
+        } else {
+            // Update reference to new room object
+            state.ui.selectedRoom = stillExists;
         }
     }
     
     return newRooms;
+}
+
+/**
+ * Sets the type of a room.
+ */
+export function setRoomType(room, type) {
+    room.type = type;
 }
 
 /**
@@ -182,7 +214,9 @@ export function getRoomInfo(room) {
     if (!room) return null;
     
     return {
+        id: room.id,
         name: room.name,
+        type: room.type || 'none',
         size: room.size,
         dimensions: `${room.bounds.width}×${room.bounds.height}`,
         wallCount: room.walls.length,

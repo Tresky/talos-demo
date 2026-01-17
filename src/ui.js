@@ -2,10 +2,10 @@
 // UI SYSTEM (DOM Updates)
 // ============================================
 
-import { BUILDINGS } from './config.js';
+import { BUILDINGS, ROOM_TYPES, FURNITURE } from './config.js';
 import { canAfford, getResources } from './state.js';
 import { getStatusText, clearTask } from './colonist.js';
-import { getRoomInfo } from './rooms.js';
+import { getRoomInfo, setRoomType } from './rooms.js';
 import { removeTask } from './tasks.js';
 
 // Cache DOM elements
@@ -92,12 +92,48 @@ function updateRoomInfo(state) {
     const info = getRoomInfo(room);
     
     if (info) {
+        const roomTypeData = ROOM_TYPES[info.type] || ROOM_TYPES.none;
+        const resources = getResources(state);
+        
+        // Build room type selector
+        let typeOptions = '';
+        for (const [typeId, typeData] of Object.entries(ROOM_TYPES)) {
+            const selected = typeId === info.type ? 'selected' : '';
+            typeOptions += `<option value="${typeId}" ${selected}>${typeData.name}</option>`;
+        }
+        
+        // Build furniture buttons based on room type
+        let furnitureButtons = '';
+        if (roomTypeData.furniture && roomTypeData.furniture.length > 0) {
+            furnitureButtons = '<div class="furniture-section"><h3>🪑 Furniture</h3>';
+            for (const furnitureId of roomTypeData.furniture) {
+                const furniture = FURNITURE[furnitureId];
+                if (furniture) {
+                    const costStr = Object.entries(furniture.cost)
+                        .map(([r, amt]) => `${amt} ${r === 'wood' ? '🪵' : '🪨'}`)
+                        .join(' ') || 'Free';
+                    const affordable = canAfford(state, furniture.cost);
+                    furnitureButtons += `
+                        <button class="build-btn furniture-btn" 
+                                data-furniture="${furnitureId}"
+                                ${affordable ? '' : 'disabled'}>
+                            <span>${furniture.name}</span>
+                            <span class="cost">${costStr}</span>
+                        </button>
+                    `;
+                }
+            }
+            furnitureButtons += '</div>';
+        }
+        
         elements.roomInfo.innerHTML = `
             <h2>🏠 Room Selected</h2>
             <div class="room-stats">
                 <div class="room-stat">
-                    <span class="label">Name</span>
-                    <span class="value">${info.name}</span>
+                    <span class="label">Type</span>
+                    <select id="room-type-select" class="room-type-select">
+                        ${typeOptions}
+                    </select>
                 </div>
                 <div class="room-stat">
                     <span class="label">Size</span>
@@ -107,11 +143,8 @@ function updateRoomInfo(state) {
                     <span class="label">Dimensions</span>
                     <span class="value">${info.dimensions}</span>
                 </div>
-                <div class="room-stat">
-                    <span class="label">Walls</span>
-                    <span class="value">${info.wallCount}</span>
-                </div>
             </div>
+            ${furnitureButtons}
             <p class="room-hint">Click elsewhere to deselect</p>
         `;
         elements.roomInfo.style.display = 'block';
@@ -161,6 +194,32 @@ export function setupColonistControls(state) {
                 const task = colonist.task;
                 clearTask(colonist, false);  // Clear colonist's task reference
                 removeTask(state, task);     // Remove task from queue entirely
+            }
+        }
+    });
+}
+
+/**
+ * Sets up room control handlers (room type, furniture).
+ */
+export function setupRoomControls(state, onFurnitureBuild) {
+    if (!elements) initUI();
+    
+    elements.roomInfo.addEventListener('change', (e) => {
+        if (e.target.id === 'room-type-select') {
+            const room = state.ui.selectedRoom;
+            if (room) {
+                setRoomType(room, e.target.value);
+            }
+        }
+    });
+    
+    elements.roomInfo.addEventListener('click', (e) => {
+        const btn = e.target.closest('.furniture-btn');
+        if (btn) {
+            const furnitureId = btn.dataset.furniture;
+            if (furnitureId && onFurnitureBuild) {
+                onFurnitureBuild(furnitureId);
             }
         }
     });

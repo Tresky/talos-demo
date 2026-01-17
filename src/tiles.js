@@ -13,6 +13,9 @@ export const TILE = {
     RUBBLE: 7,
     DOOR: 8,
     FOUNDATION: 9,  // Under construction - not walkable
+    BED: 10,
+    WORKBENCH: 11,
+    CRATE: 12,
 };
 
 // Tile metadata - extensible for future tile types
@@ -86,6 +89,31 @@ export const TILE_DATA = {
         color: '#5a5a4a',
         walkable: false,
         buildable: false,
+    },
+    [TILE.BED]: {
+        name: 'Bed',
+        color: '#8b4513',
+        walkable: false,
+        buildable: false,
+        furniture: true,
+        roomType: 'house',
+    },
+    [TILE.WORKBENCH]: {
+        name: 'Workbench',
+        color: '#deb887',
+        walkable: false,
+        buildable: false,
+        furniture: true,
+        roomType: 'carpenter',
+    },
+    [TILE.CRATE]: {
+        name: 'Crate',
+        color: '#8b7355',
+        walkable: false,
+        buildable: false,
+        furniture: true,
+        roomType: 'storage',
+        isStorage: true,
     },
 };
 

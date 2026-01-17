@@ -9,7 +9,7 @@ import { spawnStartingColonists } from './colonist.js';
 import { assignTasks } from './tasks.js';
 import { updateColonists } from './systems.js';
 import { render } from './renderer.js';
-import { initUI, updateUI, setupBuildButtons, setupColonistControls } from './ui.js';
+import { initUI, updateUI, setupBuildButtons, setupColonistControls, setupRoomControls } from './ui.js';
 import { setupInput } from './input.js';
 
 // ============================================
@@ -39,6 +39,11 @@ function setBuildMode(mode) {
     state.buildMode = mode;
 }
 
+// Furniture build handler - enters build mode for furniture
+function handleFurnitureBuild(furnitureId) {
+    state.buildMode = `furniture_${furnitureId}`;
+}
+
 // Setup input
 setupInput(canvas, state, {
     onBuildModeChange: setBuildMode,
@@ -49,6 +54,9 @@ setupBuildButtons(state, setBuildMode);
 
 // Setup colonist controls (cancel buttons)
 setupColonistControls(state);
+
+// Setup room controls (room type, furniture)
+setupRoomControls(state, handleFurnitureBuild);
 
 // ============================================
 // GAME LOOP

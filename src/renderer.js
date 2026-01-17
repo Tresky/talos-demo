@@ -2,10 +2,11 @@
 // RENDERING SYSTEM
 // ============================================
 
-import { CONFIG } from './config.js';
+import { CONFIG, ROOM_TYPES } from './config.js';
 import { TILE, TILE_DATA, isBuildable } from './tiles.js';
 import { getWorkTime } from './systems.js';
 import { findStockpileStackAt, getGroundStacks } from './items.js';
+import { getRoomAtTile } from './rooms.js';
 
 /**
  * Main render function - draws the entire game.
@@ -76,6 +77,15 @@ function renderTile(ctx, tile, px, py, tileSize, state, tileX, tileY) {
             break;
         case TILE.FOUNDATION:
             renderFoundation(ctx, px, py, tileSize);
+            break;
+        case TILE.BED:
+            renderBed(ctx, px, py, tileSize);
+            break;
+        case TILE.WORKBENCH:
+            renderWorkbench(ctx, px, py, tileSize);
+            break;
+        case TILE.CRATE:
+            renderCrate(ctx, px, py, tileSize, state, tileX, tileY);
             break;
     }
 }
@@ -179,6 +189,55 @@ function renderFoundation(ctx, px, py, tileSize) {
     ctx.restore();
 }
 
+function renderBed(ctx, px, py, tileSize) {
+    // Bed frame
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(px + 4, py + 6, tileSize - 8, tileSize - 10);
+    // Mattress
+    ctx.fillStyle = '#deb887';
+    ctx.fillRect(px + 6, py + 8, tileSize - 12, tileSize - 14);
+    // Pillow
+    ctx.fillStyle = '#f5f5dc';
+    ctx.fillRect(px + 8, py + 10, 8, 6);
+}
+
+function renderWorkbench(ctx, px, py, tileSize) {
+    // Table top
+    ctx.fillStyle = '#deb887';
+    ctx.fillRect(px + 2, py + 8, tileSize - 4, tileSize - 14);
+    // Legs
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(px + 4, py + tileSize - 8, 4, 6);
+    ctx.fillRect(px + tileSize - 8, py + tileSize - 8, 4, 6);
+    // Tools on top
+    ctx.fillStyle = '#696969';
+    ctx.fillRect(px + 10, py + 10, 6, 3);
+    ctx.fillRect(px + 18, py + 11, 4, 4);
+}
+
+function renderCrate(ctx, px, py, tileSize, state, tileX, tileY) {
+    // Crate body
+    ctx.fillStyle = '#8b7355';
+    ctx.fillRect(px + 4, py + 6, tileSize - 8, tileSize - 10);
+    // Slats
+    ctx.strokeStyle = '#6b5344';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 4, py + 12);
+    ctx.lineTo(px + tileSize - 4, py + 12);
+    ctx.moveTo(px + 4, py + 18);
+    ctx.lineTo(px + tileSize - 4, py + 18);
+    ctx.stroke();
+    
+    // Render contents if this is a storage crate
+    if (state) {
+        const stack = findStockpileStackAt(state, tileX, tileY);
+        if (stack) {
+            renderStackContents(ctx, px, py, tileSize, stack.type, stack.amount);
+        }
+    }
+}
+
 /**
  * Renders the contents of a stockpile or ground stack.
  */
@@ -254,6 +313,7 @@ function renderRooms(state, ctx, tileSize) {
     // Highlight all rooms with a subtle tint
     for (const room of state.rooms) {
         const isSelected = state.ui.selectedRoom?.id === room.id;
+        const roomType = ROOM_TYPES[room.type] || ROOM_TYPES.none;
         
         for (const tile of room.tiles) {
             const px = tile.x * tileSize;
@@ -263,8 +323,8 @@ function renderRooms(state, ctx, tileSize) {
                 // Selected room - brighter highlight
                 ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
             } else {
-                // Unselected rooms - subtle tint
-                ctx.fillStyle = 'rgba(100, 150, 255, 0.15)';
+                // Use room type color
+                ctx.fillStyle = roomType.color;
             }
             ctx.fillRect(px, py, tileSize, tileSize);
         }
@@ -328,6 +388,9 @@ function renderTaskIndicators(state, ctx, tileSize) {
                 break;
             case 'build':
                 ctx.strokeStyle = '#00aaff';  // Blue
+                break;
+            case 'furniture':
+                ctx.strokeStyle = '#aa55ff';  // Purple
                 break;
             case 'demolish':
                 ctx.strokeStyle = '#ff5555';  // Red
